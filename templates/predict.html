@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EstateVision | Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f1f5f9; color: #0f172a; }
+    
+    /* NAVBAR */
+    .navbar { display: flex; align-items: center; justify-content: space-between; padding: 15px 60px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.4); position: fixed; width: 100%; top: 0; z-index: 1000; box-sizing: border-box; }
+    .logo { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #4f46e5, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 30px; align-items: center;}
+    .nav-links a { text-decoration: none; color: #475569; font-weight: 500; font-size: 15px; transition: 0.2s; cursor: pointer; }
+    .nav-links a:hover { color: #4f46e5; }
+    
+    /* HERO & FORM CONTAINER */
+    .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding-top: 120px; padding-bottom: 80px; background: radial-gradient(circle at top, #e2e8f0 0%, #f1f5f9 100%); }
+    .form-box { background: white; padding: 40px 50px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.05); width: 100%; max-width: 650px; border: 1px solid #e2e8f0; }
+    .form-box h2 { text-align: center; margin-top: 0; margin-bottom: 30px; font-weight: 600; color: #1e293b; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 20px; }
+    
+    /* NEW INPUT STYLING */
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-group label { font-size: 13px; font-weight: 600; color: #475569; margin-left: 4px; }
+    
+    .input-card { display: flex; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #cbd5e1; transition: all 0.2s ease; }
+    .input-card:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); background: white; }
+    .input-card i { font-size: 16px; color: #94a3b8; margin-right: 12px; transition: 0.2s; }
+    .input-card:focus-within i { color: #4f46e5; }
+    
+    .input-card input { border: none; outline: none; background: transparent; width: 100%; font-size: 15px; font-family: 'Inter', sans-serif; color: #334155; }
+    .input-card input::placeholder { color: #94a3b8; font-weight: 400; }
+    
+    /* BUTTON */
+    button { margin-top: 30px; width: 100%; padding: 14px; background: linear-gradient(135deg, #4f46e5, #9333ea); border: none; color: white; font-size: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4); }
+    
+    /* RESULT CARD */
+    .result-card { margin-top: 25px; background: #f0fdf4; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #bbf7d0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .result-title { font-size: 13px; color: #166534; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+    .result-value { font-size: 32px; font-weight: 700; color: #15803d; margin-top: 5px; }
+    
+    /* HISTORY TABLE */
+    .history-box { margin-top: 50px; background: white; padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); width: 100%; max-width: 900px; border: 1px solid #e2e8f0; }
+    .history-box h3 { margin-top: 0; margin-bottom: 20px; font-size: 18px; color: #1e293b; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .history-table th { background: #f8fafc; color: #64748b; padding: 12px 15px; text-align: left; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+    .history-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+    .history-table tr:hover { background: #f8fafc; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">EstateVision</div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="#">Dashboard</a>
+        <a onclick="logout()">Sign Out</a>
+    </div>
+</div>
+
+<div class="hero">
+    <div class="form-box">
+        <h2>Property Valuation Model</h2>
+        <form action="/predict" method="POST">
+            <div class="form-grid">
+                
+                <div class="input-group">
+                    <label>Transaction Date</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-calendar"></i>
+                        <input id="transaction_date" type="number" step="any" name="transaction_date" value="{{ request.form.transaction_date }}" placeholder="e.g., 2013.5" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>House Age (Yrs)</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-house"></i>
+                        <input id="house_age" type="number" step="any" name="house_age" value="{{ request.form.house_age }}" placeholder="e.g., 15.0" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Distance to MRT (m)</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-train"></i>
+                        <input id="distance_mrt" type="number" step="any" name="distance_mrt" value="{{ request.form.distance_mrt }}" placeholder="e.g., 306.6" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Stores Nearby</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-store"></i>
+                        <input id="stores" type="number" step="any" name="stores" value="{{ request.form.stores }}" placeholder="e.g., 5" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Latitude</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <input id="latitude" type="number" step="any" name="latitude" value="{{ request.form.latitude }}" placeholder="e.g., 24.982" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Longitude</label>
+                    <div class="input-card">
+                        <i class="fa-solid fa-compass"></i>
+                        <input id="longitude" type="number" step="any" name="longitude" value="{{ request.form.longitude }}" placeholder="e.g., 121.540" required>
+                    </div>
+                </div>
+
+            </div>
+            <button type="submit">Run Prediction Model</button>
+        </form>
+
+        {% if prediction_text %}
+        <div class="result-card">
+            <div class="result-title">Estimated Market Value</div>
+            <div class="result-value" id="priceValue">${{ prediction_text }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="history-box">
+        <h3>Prediction Logs</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Age</th>
+                    <th>MRT Dist.</th>
+                    <th>Stores</th>
+                    <th>Lat</th>
+                    <th>Long</th>
+                    <th>Est. Price</th>
+                </tr>
+            </thead>
+            <tbody id="historyTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://pqtshfjiahvgjmmmcanr.supabase.co"
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdHNoZmppYWh2Z2ptbW1jYW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MzAyNzMsImV4cCI6MjA4OTIwNjI3M30.jiNaBme7XunFj8UhzzpqqHkdj19vOSUb52vfS5Y_JOw"
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+async function checkAuth(){
+    const { data:{session} } = await supabaseClient.auth.getSession()
+    if(!session){ window.location.href="/login" }
+}
+
+async function logout() {
+    await supabaseClient.auth.signOut()
+    window.location.href = "/"
+}
+
+async function savePrediction(){
+    const { data:{session} } = await supabaseClient.auth.getSession()
+    if(!session) return
+
+    const priceTextElement = document.getElementById("priceValue")
+    if(!priceTextElement) return;
+
+    const priceText = priceTextElement.innerText
+    const price = parseFloat(priceText.replace(/[^0-9.-]+/g,""))
+    if(isNaN(price)) return
+
+    const { error } = await supabaseClient
+    .from("predictions")
+    .insert([{
+        user_email: session.user.email,
+        transaction_date: parseFloat(document.getElementById("transaction_date").value),
+        house_age: parseFloat(document.getElementById("house_age").value),
+        distance_mrt: parseFloat(document.getElementById("distance_mrt").value),
+        stores: parseFloat(document.getElementById("stores").value),
+        latitude: parseFloat(document.getElementById("latitude").value),
+        longitude: parseFloat(document.getElementById("longitude").value),
+        predicted_price: price
+    }])
+
+    if(error){ console.log("Insert Error:",error) } 
+    else { loadHistory() }
+}
+
+async function loadHistory(){
+    const { data:{session} } = await supabaseClient.auth.getSession()
+    if(!session) return
+
+    const { data,error } = await supabaseClient
+    .from("predictions")
+    .select("*")
+    .eq("user_email", session.user.email)
+    .order("id", {ascending:false})
+
+    if(error){ console.log(error); return; }
+
+    const table = document.getElementById("historyTable")
+    table.innerHTML = ""
+
+    data.forEach(row => {
+        table.innerHTML += `
+        <tr>
+            <td>${row.transaction_date}</td>
+            <td>${row.house_age}</td>
+            <td>${row.distance_mrt}</td>
+            <td>${row.stores}</td>
+            <td>${row.latitude}</td>
+            <td>${row.longitude}</td>
+            <td style="font-weight: 600; color: #15803d;">$${row.predicted_price.toLocaleString()}</td>
+        </tr>`
+    })
+}
+
+window.onload = async function(){
+    await checkAuth()
+    setTimeout(savePrediction, 600)
+    setTimeout(loadHistory, 800)
+}
+</script>
+</body>
+</html>
